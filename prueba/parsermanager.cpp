@@ -8,45 +8,39 @@ ParserManager::ParserManager(QObject *parent) :
 
 void ParserManager::startParse()
 {
-//    qDebug("ParserManager::startParse()");
     started = true;
     updateParser();
 }
 
 void ParserManager::updateParser()
 {
-//    qDebug("ParserManager::updateParser()");
     if (started)
     {
-//        qDebug("- is started ");
         while (parsersMap.count() <= MAX_SIMULTANEUS_PARSERS && !queue.empty())
         {
-//            qDebug("- parse executed");
             Parser *newParser = queue.dequeue();
             connect(newParser,
                     SIGNAL(parseDone(QString)),
                     this,
-                    SLOT(parsFinish(QString)));
-//            qDebug("- newParser url:%s",newParser->getUrl().toStdString().c_str());
+                    SLOT(onParsFinish(QString)));
             parsersMap.insert(newParser->getUrl(),newParser);
             newParser->parse();
         }
     }
 }
 
-void ParserManager::addParse(QString url, QString rawData)
+void ParserManager::addParse(QString url, QString rawData, int page)
 {
-//    qDebug("ParserManager::addParse(QString rawData)");
-
-    Parser *newParser = new Parser(url,rawData);
+    Parser *newParser = new Parser(url,rawData,page);
 
     queue.enqueue(newParser);
     updateParser();
 }
 
-void ParserManager::parsFinish(QString url)
+void ParserManager::onParsFinish(QString url)
 {
-//    qDebug("ParserManager::parsFinish(QString url)");
+    Parser *newParser = parsersMap.value(url);
+    emit parseFinish(url, newParser->getPage(), newParser->getItems(), newParser->getNumberOfPages());
     parsersMap.remove(url);
     updateParser();
 }

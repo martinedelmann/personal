@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QMap>
 
 #include "downloadmanager.h"
 #include "parsermanager.h"
@@ -24,8 +25,15 @@ private:
     DownloadManager *downloadManager;
     ParserManager *parserManager;
 
+    QString urlFirstPart;
+    QString urlSecondPart;
+
+    QMap<int,Item> resultItems;
+
+    int downloadsWaiting;
 public slots:
-    void downloadFinish(QString url, QString data);
+    void onDownloadFinish(QString url, QString data, int page);
+    void onParseFinish(QString url, int page, QVector<Item> items, int numberOfPages);
 
 private slots:
     void on_pushButton_clicked();

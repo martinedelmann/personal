@@ -18,3 +18,13 @@ QUrl Download::getUrl()
 {
     return QUrl(url);
 }
+
+void Download::setPage(int param)
+{
+    page = param;
+}
+
+int Download::getPage()
+{
+    return page;
+}

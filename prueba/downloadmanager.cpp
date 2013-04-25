@@ -8,17 +8,15 @@ DownloadManager::DownloadManager(QObject *parent) :
 
 void DownloadManager::startDownload()
 {
-//    qDebug("DownloadManager::startDownload()");
     started = true;
     updateDownloads();
 }
 
 void DownloadManager::updateDownloads()
 {
-//    qDebug("DownloadManager::updateDownloads()");
     if (started)
     {
-        while (downloadsMap.count() <= MAXSIMULTANEUSDOWNLOADS && !queue.empty())
+        while (downloadsManagerMap.count() <= MAXSIMULTANEUSDOWNLOADS && !queue.empty())
         {
             Download *newDownload = queue.dequeue();
             QNetworkAccessManager *manager = new QNetworkAccessManager();
@@ -26,30 +24,32 @@ void DownloadManager::updateDownloads()
                     SIGNAL(finished(QNetworkReply*)),
                     this,
                     SLOT(downloadFinish(QNetworkReply*)));
-            downloadsMap.insert(newDownload->getUrlString(),manager);
-//            qDebug("get:%s",newDownload->getUrlString().toStdString().c_str());
+            downloadsManagerMap.insert(newDownload->getUrlString(),manager);
+            downloadsMap.insert(newDownload->getUrlString(),newDownload);
             manager->get(QNetworkRequest(newDownload->getUrl()));
         }
     }
 }
 
-void DownloadManager::addDownload(QString url)
+void DownloadManager::addDownload(QString url, int page)
 {
-//    qDebug("DownloadManager::addDownload:%s",url.toStdString().c_str());
     Download *newDownload = new Download();
     newDownload->setUrl(url);
+    newDownload->setPage(page);
     queue.enqueue(newDownload);
     updateDownloads();
 }
 
 void DownloadManager::downloadFinish(QNetworkReply *reply)
 {
-//    qDebug("DownloadManager::downloadFinish:%s",reply->request().url().toString().toStdString().c_str());
-
     QByteArray data = reply->readAll();
     reply->deleteLater();
     QString dataString(data);
 
-    emit downloadFinish(reply->request().url().toString(),dataString);
+    Download *download = downloadsMap.value(reply->request().url().toString());
+
+    emit downloadFinish(download->getUrlString(), dataString, download->getPage());
+    downloadsManagerMap.remove(download->getUrlString());
     downloadsMap.remove(reply->request().url().toString());
+    updateDownloads();
 }

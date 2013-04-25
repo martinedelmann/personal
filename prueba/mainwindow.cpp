@@ -10,10 +10,19 @@ MainWindow::MainWindow(QWidget *parent) :
     downloadManager = new DownloadManager();
     parserManager = new ParserManager();
 
+    urlFirstPart = QString("http://subdivx.com/index.php?accion=5&buscar=");
+    urlSecondPart = QString("&masdesc=&idusuario=&nick=&oxfecha=&oxcd=&oxdown=&pg=");
+
+    downloadsWaiting = 0;
+
     connect(downloadManager,
-            SIGNAL(downloadFinish(QString,QString)),
+            SIGNAL(downloadFinish(QString,QString,int)),
             this,
-            SLOT(downloadFinish(QString,QString)));
+            SLOT(onDownloadFinish(QString,QString,int)));
+    connect(parserManager,
+            SIGNAL(parseFinish(QString, int, QVector<Item>, int)),
+            this,
+            SLOT(onParseFinish(QString, int, QVector<Item>, int)));
 }
 
 MainWindow::~MainWindow()
@@ -23,17 +32,71 @@ MainWindow::~MainWindow()
 
 void MainWindow::on_pushButton_clicked()
 {
-    downloadManager->addDownload("http://subdivx.com/index.php?buscar=terminator&accion=5&masdesc=&subtitulos=1&realiza_b=1");
+    QString url;
+
+    QString token = ui->tokenEditLine->text();
+    token.replace(" ","+");
+
+    url.append(urlFirstPart);
+    url.append(token);
+    url.append(urlSecondPart);
+    url.append(QString::number(1));
+
+    downloadManager->addDownload(url,1);
     downloadManager->startDownload();
 }
 
-void MainWindow::downloadFinish(QString url, QString data)
+void MainWindow::onDownloadFinish(QString url, QString data, int page)
 {
-    qDebug("void MainWindow::downloadFinish(QString url, QString data):%s",data.toStdString().c_str());
-
-    ui->plainTextEdit->setPlainText(data);
-
-    parserManager->addParse(url,data);
+    parserManager->addParse(url,data,page);
 
     parserManager->startParse();
+}
+
+void MainWindow::onParseFinish(QString url, int page, QVector<Item> items, int numberOfPages)
+{
+    QVectorIterator<Item> itr(items);
+    while(itr.hasNext())
+    {
+        Item item = itr.next();
+        resultItems.insert(item.getId(),item);
+    }
+
+    if (page == 1)
+    {
+        if (numberOfPages > 1)
+        {
+            for (int i = 2; i <= numberOfPages; i++)
+            {
+                QString url;
+
+                QString token = ui->tokenEditLine->text();
+                token.replace(" ","+");
+
+                url.append(urlFirstPart);
+                url.append(token);
+                url.append(urlSecondPart);
+                url.append(QString::number(i));
+
+                downloadManager->addDownload(url,i);
+                downloadManager->startDownload();
+                downloadsWaiting++;
+            }
+        }
+    }
+    else
+    {
+        downloadsWaiting--;
+        if (downloadsWaiting == 0)
+        {
+            QMapIterator<int,Item> itr(resultItems);
+            while(itr.hasNext())
+            {
+                Item item = itr.next().value();
+                qDebug("id:%d titl:%s url:%s",item.getId(),
+                       item.getTittle().toStdString().c_str(),
+                       item.getDownloadUrl().toStdString().c_str());
+            }
+        }
+    }
 }

@@ -13,8 +13,11 @@ public:
     QString getUrlString();
     QUrl getUrl();
 
+    void setPage(int param);
+    int getPage();
 private:
     QString url;
+    int page;
 };
 
 #endif // DOWNLOAD_H

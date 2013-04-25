@@ -16,7 +16,7 @@ public:
     explicit ParserManager(QObject *parent = 0);
     
     void startParse();
-    void addParse(QString url, QString rawData);
+    void addParse(QString url, QString rawData, int page);
 
 private:
     QQueue<Parser*> queue;
@@ -27,8 +27,10 @@ private:
     void updateParser();
 
 public slots:
-    void parsFinish(QString url);
+    void onParsFinish(QString url);
 
+signals:
+    void parseFinish(QString url, int page, QVector<Item> items, int numberOfPages);
 signals:
 };
 

@@ -20,18 +20,19 @@ public:
     explicit DownloadManager(QObject *parent = 0);
 
     void startDownload();
-    void addDownload(QString url);
+    void addDownload(QString url, int page);
 
 private:
     QQueue<Download*> queue;
-    QMap<QString,QNetworkAccessManager*> downloadsMap;
+    QMap<QString,QNetworkAccessManager*> downloadsManagerMap;
+    QMap<QString,Download*> downloadsMap;
 
     bool started;
 
     void updateDownloads();
 
 signals:
-    void downloadFinish(QString url, QString data);
+    void downloadFinish(QString url, QString data, int page);
 
 public slots:
 private slots:

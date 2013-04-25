@@ -19,13 +19,13 @@ SOURCES += main.cpp\
     download.cpp \
     parsermanager.cpp \
     parser.cpp \
-    subitem.cpp
+    item.cpp
 
 HEADERS  += mainwindow.h \
     downloadmanager.h \
     download.h \
     parsermanager.h \
     parser.h \
-    subitem.h
+    item.h
 
 FORMS    += mainwindow.ui
