@@ -14,8 +14,10 @@ MainWindow::MainWindow(QWidget *parent) :
     urlSecondPart = QString("&masdesc=&idusuario=&nick=&oxfecha=&oxcd=&oxdown=&pg=");
 
     model = new QStandardItemModel();
+    proxyModel = new QSortFilterProxyModel();
+    proxyModel->setSourceModel(model);
 
-    ui->listView->setModel(model);
+    ui->listView->setModel(proxyModel);
 
     downloadsWaiting = 0;
 
@@ -111,4 +113,11 @@ void MainWindow::onParseFinish(QString url, int page, QVector<Item> items, int n
 //            }
 //        }
     }
+}
+
+void MainWindow::on_listView_doubleClicked(const QModelIndex &index)
+{
+    qDebug("id:%s description:%s",
+           model->data(index,Qt::UserRole).toString().toStdString().c_str(),
+           model->data(index,Qt::DisplayRole).toString().toStdString().c_str());
 }

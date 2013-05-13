@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include <QMap>
 #include <QStandardItemModel>
+#include <QSortFilterProxyModel>
 
 #include "downloadmanager.h"
 #include "parsermanager.h"
@@ -32,6 +33,7 @@ private:
     QMap<int,Item> resultItems;
 
     QStandardItemModel *model;
+    QSortFilterProxyModel *proxyModel;
 
     int downloadsWaiting;
 public slots:
@@ -42,6 +44,7 @@ private slots:
     void on_pushButton_clicked();
 
 
+    void on_listView_doubleClicked(const QModelIndex &index);
 };
 
 #endif // MAINWINDOW_H
