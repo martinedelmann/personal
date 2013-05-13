@@ -13,6 +13,10 @@ MainWindow::MainWindow(QWidget *parent) :
     urlFirstPart = QString("http://subdivx.com/index.php?accion=5&buscar=");
     urlSecondPart = QString("&masdesc=&idusuario=&nick=&oxfecha=&oxcd=&oxdown=&pg=");
 
+    model = new QStandardItemModel();
+
+    ui->listView->setModel(model);
+
     downloadsWaiting = 0;
 
     connect(downloadManager,
@@ -60,6 +64,14 @@ void MainWindow::onParseFinish(QString url, int page, QVector<Item> items, int n
     {
         Item item = itr.next();
         resultItems.insert(item.getId(),item);
+
+        QStandardItem *modelItem;
+        modelItem = new QStandardItem();
+        modelItem->setData( item.getTittle(), Qt::DisplayRole );
+        modelItem->setData( item.getId(), Qt::UserRole );
+        modelItem->setEditable( false );
+
+        model->appendRow( modelItem );
     }
 
     if (page == 1)
@@ -87,16 +99,16 @@ void MainWindow::onParseFinish(QString url, int page, QVector<Item> items, int n
     else
     {
         downloadsWaiting--;
-        if (downloadsWaiting == 0)
-        {
-            QMapIterator<int,Item> itr(resultItems);
-            while(itr.hasNext())
-            {
-                Item item = itr.next().value();
-                qDebug("id:%d titl:%s url:%s",item.getId(),
-                       item.getTittle().toStdString().c_str(),
-                       item.getDownloadUrl().toStdString().c_str());
-            }
-        }
+//        if (downloadsWaiting == 0)
+//        {
+//            QMapIterator<int,Item> itr(resultItems);
+//            while(itr.hasNext())
+//            {
+//                Item item = itr.next().value();
+//                qDebug("id:%d titl:%s url:%s",item.getId(),
+//                       item.getTittle().toStdString().c_str(),
+//                       item.getDownloadUrl().toStdString().c_str());
+//            }
+//        }
     }
 }

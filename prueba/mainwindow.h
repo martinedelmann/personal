@@ -3,6 +3,7 @@
 
 #include <QMainWindow>
 #include <QMap>
+#include <QStandardItemModel>
 
 #include "downloadmanager.h"
 #include "parsermanager.h"
@@ -29,6 +30,8 @@ private:
     QString urlSecondPart;
 
     QMap<int,Item> resultItems;
+
+    QStandardItemModel *model;
 
     int downloadsWaiting;
 public slots:
