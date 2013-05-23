@@ -1,7 +1,7 @@
 /****************************************************************************
 ** Meta object code from reading C++ file 'parsermanager.h'
 **
-** Created: Thu Apr 25 11:21:17 2013
+** Created: Thu May 23 15:09:47 2013
 **      by: The Qt Meta Object Compiler version 63 (Qt 4.8.2)
 **
 ** WARNING! All changes made in this file will be lost!

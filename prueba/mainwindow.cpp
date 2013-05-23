@@ -1,11 +1,21 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
+#include <QFileDialog>
+
+#include <QDir>
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+
+    ui->lineEditFolder->setText(QDir::homePath());
+
+    connect(ui->lineEditToken,
+            SIGNAL(returnPressed()),
+            this,
+            SLOT(on_pushButtonSearch_clicked()));
 
     downloadManager = new DownloadManager();
     parserManager = new ParserManager();
@@ -22,9 +32,13 @@ MainWindow::MainWindow(QWidget *parent) :
     downloadsWaiting = 0;
 
     connect(downloadManager,
-            SIGNAL(downloadFinish(QString,QString,int)),
+            SIGNAL(downloadPageFinish(QString,QString,int)),
             this,
-            SLOT(onDownloadFinish(QString,QString,int)));
+            SLOT(onDownloadPageFinish(QString,QString,int)));
+    connect(downloadManager,
+            SIGNAL(downloadFileFinish(QString,QByteArray,QString)),
+            this,
+            SLOT(onDownloadfileFinish(QString,QByteArray,QString)));
     connect(parserManager,
             SIGNAL(parseFinish(QString, int, QVector<Item>, int)),
             this,
@@ -36,11 +50,13 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-void MainWindow::on_pushButton_clicked()
+void MainWindow::on_pushButtonSearch_clicked()
 {
     QString url;
 
-    QString token = ui->tokenEditLine->text();
+    model->clear();
+
+    QString token = ui->lineEditToken->text();
     token.replace(" ","+");
 
     url.append(urlFirstPart);
@@ -50,13 +66,22 @@ void MainWindow::on_pushButton_clicked()
 
     downloadManager->addDownload(url,1);
     downloadManager->startDownload();
+
+    ui->pushButtonSearch->setEnabled(false);
 }
 
-void MainWindow::onDownloadFinish(QString url, QString data, int page)
+void MainWindow::onDownloadPageFinish(QString url, QString data, int page)
 {
     parserManager->addParse(url,data,page);
 
     parserManager->startParse();
+}
+
+void MainWindow::onDownloadfileFinish(QString url, QByteArray data, QString fileName_p)
+{
+    qDebug("bajo:%s",fileName_p.toStdString().c_str());
+    QString fileName = fileName_p.split("/").last();
+    qDebug("fileName:%s",fileName.toStdString().c_str());
 }
 
 void MainWindow::onParseFinish(QString url, int page, QVector<Item> items, int numberOfPages)
@@ -69,9 +94,13 @@ void MainWindow::onParseFinish(QString url, int page, QVector<Item> items, int n
 
         QStandardItem *modelItem;
         modelItem = new QStandardItem();
+
         modelItem->setData( item.getTittle(), Qt::DisplayRole );
         modelItem->setData( item.getId(), Qt::UserRole );
+        modelItem->setData( item.getDownloadUrl(), Qt::UserRole + 1 );
         modelItem->setEditable( false );
+        modelItem->setCheckable(true);
+        modelItem->setCheckState(Qt::Unchecked);
 
         model->appendRow( modelItem );
     }
@@ -84,7 +113,7 @@ void MainWindow::onParseFinish(QString url, int page, QVector<Item> items, int n
             {
                 QString url;
 
-                QString token = ui->tokenEditLine->text();
+                QString token = ui->lineEditToken->text();
                 token.replace(" ","+");
 
                 url.append(urlFirstPart);
@@ -101,23 +130,55 @@ void MainWindow::onParseFinish(QString url, int page, QVector<Item> items, int n
     else
     {
         downloadsWaiting--;
-//        if (downloadsWaiting == 0)
-//        {
-//            QMapIterator<int,Item> itr(resultItems);
-//            while(itr.hasNext())
-//            {
-//                Item item = itr.next().value();
-//                qDebug("id:%d titl:%s url:%s",item.getId(),
-//                       item.getTittle().toStdString().c_str(),
-//                       item.getDownloadUrl().toStdString().c_str());
-//            }
-//        }
+    }
+
+    if (downloadsWaiting <=0)
+    {
+        ui->pushButtonSearch->setEnabled(true);
     }
 }
 
 void MainWindow::on_listView_doubleClicked(const QModelIndex &index)
 {
-    qDebug("id:%s description:%s",
-           model->data(index,Qt::UserRole).toString().toStdString().c_str(),
-           model->data(index,Qt::DisplayRole).toString().toStdString().c_str());
+    QStandardItem *modelItem = model->item(index.row());
+}
+
+void MainWindow::on_pushButtonSelectAll_clicked()
+{
+    for (int i = 0; i < model->rowCount(); i++)
+    {
+        QStandardItem *modelItem = model->item(i);
+        modelItem->setCheckState(Qt::Checked);
+    }
+}
+
+void MainWindow::on_pushButtonUnselectAll_clicked()
+{
+    for (int i = 0; i < model->rowCount(); i++)
+    {
+        QStandardItem *modelItem = model->item(i);
+        modelItem->setCheckState(Qt::Unchecked);
+    }
+}
+
+void MainWindow::on_pushButtonDownload_clicked()
+{
+    for (int i = 0; i < model->rowCount(); i++)
+    {
+        QStandardItem *modelItem = model->item(i);
+        if (modelItem->checkState() == Qt::Checked)
+        {
+            QString url = modelItem->data(Qt::UserRole+1).toString();
+            downloadManager->addDownload(url,-1);
+        }
+    }
+}
+
+void MainWindow::on_pushButton_clicked()
+{
+    QString pathName = QFileDialog::getOpenFileName(this,
+                                                    tr("Select Folder"),
+                                                    ui->lineEditFolder->text(),
+                                                    tr("folder (*.)"));
+    ui->lineEditFolder->setText(pathName);
 }

@@ -32,7 +32,8 @@ private:
     void updateDownloads();
 
 signals:
-    void downloadFinish(QString url, QString data, int page);
+    void downloadPageFinish(QString url, QString data, int page);
+    void downloadFileFinish(QString url, QByteArray data, QString fileName);
 
 public slots:
 private slots:

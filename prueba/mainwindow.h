@@ -36,15 +36,22 @@ private:
     QSortFilterProxyModel *proxyModel;
 
     int downloadsWaiting;
+
 public slots:
-    void onDownloadFinish(QString url, QString data, int page);
+    void onDownloadPageFinish(QString url, QString data, int page);
+    void onDownloadfileFinish(QString url, QByteArray data, QString fileName_p);
     void onParseFinish(QString url, int page, QVector<Item> items, int numberOfPages);
 
 private slots:
+    void on_listView_doubleClicked(const QModelIndex &index);
+    void on_pushButtonSelectAll_clicked();
+    void on_pushButtonSearch_clicked();
+    void on_pushButtonUnselectAll_clicked();
+    void on_pushButtonDownload_clicked();
     void on_pushButton_clicked();
 
-
-    void on_listView_doubleClicked(const QModelIndex &index);
+signals:
+    void selectAll();
 };
 
 #endif // MAINWINDOW_H

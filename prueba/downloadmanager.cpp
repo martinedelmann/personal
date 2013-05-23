@@ -1,4 +1,5 @@
 #include "downloadmanager.h"
+#include <QDebug>
 
 DownloadManager::DownloadManager(QObject *parent) :
     QObject(parent)
@@ -44,11 +45,19 @@ void DownloadManager::downloadFinish(QNetworkReply *reply)
 {
     QByteArray data = reply->readAll();
     reply->deleteLater();
-    QString dataString(data);
 
     Download *download = downloadsMap.value(reply->request().url().toString());
 
-    emit downloadFinish(download->getUrlString(), dataString, download->getPage());
+    if (download->getPage() >= 0)
+    {
+        QString dataString(data);
+        emit downloadPageFinish(download->getUrlString(), dataString, download->getPage());
+    } else {
+        emit downloadFileFinish(download->getUrlString(),
+                                data,
+                                reply->rawHeader(QByteArray("Location")));
+    }
+
     downloadsManagerMap.remove(download->getUrlString());
     downloadsMap.remove(reply->request().url().toString());
     updateDownloads();
