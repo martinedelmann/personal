@@ -20,7 +20,10 @@ public:
     explicit DownloadManager(QObject *parent = 0);
 
     void startDownload();
-    void addDownload(QString url, int page);
+
+    void addPageDownload(QString url, int page);
+    void addFileInfoDownload(QString url);
+    void addFileDownload(QString url, QString fileName);
 
 private:
     QQueue<Download*> queue;
@@ -30,7 +33,7 @@ private:
     bool started;
 
     void updateDownloads();
-
+    void addDownload(QString url, int type, int page, QString fileName="");
 signals:
     void downloadPageFinish(QString url, QString data, int page);
     void downloadFileFinish(QString url, QByteArray data, QString fileName);

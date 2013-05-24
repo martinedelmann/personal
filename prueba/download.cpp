@@ -28,3 +28,23 @@ int Download::getPage()
 {
     return page;
 }
+
+void Download::setType(int type)
+{
+    this->type = type;
+}
+
+int Download::getType()
+{
+    return type;
+}
+
+void Download::setFileName(QString fileName)
+{
+    this->fileName = fileName;
+}
+
+QString Download::getFileName()
+{
+    return fileName;
+}

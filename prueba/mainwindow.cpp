@@ -4,12 +4,14 @@
 
 #include <QDir>
 
+using namespace std;
+
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-
+    ui->progressBar->setVisible(false);
     ui->lineEditFolder->setText(QDir::homePath());
 
     connect(ui->lineEditToken,
@@ -64,7 +66,7 @@ void MainWindow::on_pushButtonSearch_clicked()
     url.append(urlSecondPart);
     url.append(QString::number(1));
 
-    downloadManager->addDownload(url,1);
+    downloadManager->addPageDownload(url,1);
     downloadManager->startDownload();
 
     ui->pushButtonSearch->setEnabled(false);
@@ -79,9 +81,23 @@ void MainWindow::onDownloadPageFinish(QString url, QString data, int page)
 
 void MainWindow::onDownloadfileFinish(QString url, QByteArray data, QString fileName_p)
 {
-    qDebug("bajo:%s",fileName_p.toStdString().c_str());
-    QString fileName = fileName_p.split("/").last();
-    qDebug("fileName:%s",fileName.toStdString().c_str());
+    QString completeFileName = ui->lineEditFolder->text();
+    completeFileName.append("/");
+    completeFileName.append(fileName_p);
+    QFile file(completeFileName);
+    if (file.open(QIODevice::WriteOnly))
+    {
+        file.write(data);
+        file.close();
+    } else {
+        qDebug("fallo al abrir archivo");
+    }
+
+    int progressBarValue = ui->progressBar->value();
+    if (progressBarValue + 1 >= ui->progressBar->maximum())
+        ui->progressBar->setVisible(false);
+    else
+        ui->progressBar->setValue(progressBarValue + 1);
 }
 
 void MainWindow::onParseFinish(QString url, int page, QVector<Item> items, int numberOfPages)
@@ -121,7 +137,7 @@ void MainWindow::onParseFinish(QString url, int page, QVector<Item> items, int n
                 url.append(urlSecondPart);
                 url.append(QString::number(i));
 
-                downloadManager->addDownload(url,i);
+                downloadManager->addPageDownload(url,i);
                 downloadManager->startDownload();
                 downloadsWaiting++;
             }
@@ -163,22 +179,37 @@ void MainWindow::on_pushButtonUnselectAll_clicked()
 
 void MainWindow::on_pushButtonDownload_clicked()
 {
+    QStringList urlsToDownload;
+
     for (int i = 0; i < model->rowCount(); i++)
     {
         QStandardItem *modelItem = model->item(i);
         if (modelItem->checkState() == Qt::Checked)
         {
             QString url = modelItem->data(Qt::UserRole+1).toString();
-            downloadManager->addDownload(url,-1);
+            urlsToDownload.append(url);
+            downloadManager->addFileInfoDownload(url);
         }
     }
+
+    ui->progressBar->setMaximum(urlsToDownload.count());
+    ui->progressBar->setValue(0);
+    ui->progressBar->setVisible(true);
+    QStringListIterator itr(urlsToDownload);
+    while(itr.hasNext())
+        downloadManager->addFileInfoDownload(itr.next());
 }
 
 void MainWindow::on_pushButton_clicked()
 {
-    QString pathName = QFileDialog::getOpenFileName(this,
-                                                    tr("Select Folder"),
-                                                    ui->lineEditFolder->text(),
-                                                    tr("folder (*.)"));
+    QString pathName = ui->lineEditFolder->text();
+
+    QFileDialog dialog(this);
+    dialog.setFileMode(QFileDialog::DirectoryOnly);
+    if (dialog.exec())
+    {
+        pathName = dialog.directory().absolutePath();
+    }
+
     ui->lineEditFolder->setText(pathName);
 }

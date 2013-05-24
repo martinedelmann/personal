@@ -1,5 +1,6 @@
 #include "downloadmanager.h"
-#include <QDebug>
+
+#include <QStringList>
 
 DownloadManager::DownloadManager(QObject *parent) :
     QObject(parent)
@@ -10,6 +11,32 @@ DownloadManager::DownloadManager(QObject *parent) :
 void DownloadManager::startDownload()
 {
     started = true;
+    updateDownloads();
+}
+
+void DownloadManager::addPageDownload(QString url, int page)
+{
+    addDownload(url,Download::pageType,page);
+}
+
+void DownloadManager::addFileInfoDownload(QString url)
+{
+    addDownload(url,Download::fileInfoType,-1);
+}
+
+void DownloadManager::addFileDownload(QString url, QString fileName)
+{
+    addDownload(url,Download::fileType,-1,fileName);
+}
+
+void DownloadManager::addDownload(QString url, int type, int page, QString fileName)
+{
+    Download *newDownload = new Download();
+    newDownload->setType(type);
+    newDownload->setFileName(fileName);
+    newDownload->setUrl(url);
+    newDownload->setPage(page);
+    queue.enqueue(newDownload);
     updateDownloads();
 }
 
@@ -32,33 +59,35 @@ void DownloadManager::updateDownloads()
     }
 }
 
-void DownloadManager::addDownload(QString url, int page)
-{
-    Download *newDownload = new Download();
-    newDownload->setUrl(url);
-    newDownload->setPage(page);
-    queue.enqueue(newDownload);
-    updateDownloads();
-}
-
 void DownloadManager::downloadFinish(QNetworkReply *reply)
 {
     QByteArray data = reply->readAll();
     reply->deleteLater();
-
-    Download *download = downloadsMap.value(reply->request().url().toString());
-
-    if (download->getPage() >= 0)
+    if (downloadsMap.contains(reply->request().url().toString()))
     {
-        QString dataString(data);
-        emit downloadPageFinish(download->getUrlString(), dataString, download->getPage());
-    } else {
-        emit downloadFileFinish(download->getUrlString(),
-                                data,
-                                reply->rawHeader(QByteArray("Location")));
-    }
+        Download *download = downloadsMap.value(reply->request().url().toString());
+        int downloadType = download->getType();
 
-    downloadsManagerMap.remove(download->getUrlString());
-    downloadsMap.remove(reply->request().url().toString());
-    updateDownloads();
+        if (downloadType == Download::pageType)
+        {
+            QString dataString(data);
+            emit downloadPageFinish(download->getUrlString(), dataString, download->getPage());
+        }
+        else if (downloadType == Download::fileInfoType)
+        {
+            QString location = reply->rawHeader(QByteArray("Location"));
+            QString fileName = location.split("/").last();
+            addFileDownload(location,fileName);
+        }
+        else if (downloadType == Download::fileType)
+        {
+            emit downloadFileFinish(download->getUrlString(),
+                                    data,
+                                    download->getFileName());
+        }
+
+        downloadsManagerMap.remove(download->getUrlString());
+        downloadsMap.remove(reply->request().url().toString());
+        updateDownloads();
+    }
 }

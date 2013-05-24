@@ -37,6 +37,10 @@ int Parser::getNumberOfPages()
     QRegExp exp(">[1-9]+<");
 
     int count = tempDataA.count(exp);
+
+    if (count == 0)
+        return 1;
+
     int from = 0;
     int in = 0;
 
